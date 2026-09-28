@@ -1,0 +1,22 @@
+{
+  "name": "3U Earth imager",
+  "bus_size_u": 3,
+  "rationale": "Hand-built reference layout: optics on the floor, avionics and power stacked above, orthogonal reaction wheels, star tracker under the top face, body-mounted plus two deployed wings.",
+  "components": [
+    {"id": "camera", "type": "camera_payload", "aperture_mm": 50, "length_mm": 100, "position_mm": [0, 0, 2]},
+    {"id": "avionics", "type": "electronics_stack", "boards": 3, "position_mm": [0, 0, 102]},
+    {"id": "battery", "type": "battery", "capacity_wh": 40, "position_mm": [0, 0, 147]},
+    {"id": "wheel_z", "type": "reaction_wheel", "position_mm": [-20, -20, 173]},
+    {"id": "wheel_x", "type": "reaction_wheel", "position_mm": [25, 0, 194.5], "rotation_deg": [0, 90, 0]},
+    {"id": "wheel_y", "type": "reaction_wheel", "position_mm": [-20, 5, 194.5], "rotation_deg": [-90, 0, 0]},
+    {"id": "star_tracker", "type": "star_tracker", "position_mm": [0, 0, 248.5]},
+    {"id": "panel_px", "type": "solar_panel", "width_mm": 330, "length_mm": 90, "position_mm": [50, 0, 170.25], "rotation_deg": [0, 90, 0]},
+    {"id": "panel_nx", "type": "solar_panel", "width_mm": 330, "length_mm": 90, "position_mm": [-50, 0, 170.25], "rotation_deg": [0, -90, 0]},
+    {"id": "panel_py", "type": "solar_panel", "width_mm": 90, "length_mm": 240, "position_mm": [0, 50, 215.25], "rotation_deg": [-90, 0, 0]},
+    {"id": "panel_ny", "type": "solar_panel", "width_mm": 90, "length_mm": 330, "position_mm": [0, -50, 170.25], "rotation_deg": [90, 0, 0]},
+    {"id": "wing_px", "type": "solar_panel", "width_mm": 300, "length_mm": 90, "deployed": true, "position_mm": [200, 0, 340.5]},
+    {"id": "wing_nx", "type": "solar_panel", "width_mm": 300, "length_mm": 90, "deployed": true, "position_mm": [-200, 0, 340.5]},
+    {"id": "sband_patch", "type": "patch_antenna", "size_mm": 60, "position_mm": [0, 50, 50], "rotation_deg": [-90, 0, 0]},
+    {"id": "uhf_whip", "type": "whip_antenna", "length_mm": 300, "position_mm": [40, 50, 50], "rotation_deg": [-90, 0, 0]}
+  ]
+}

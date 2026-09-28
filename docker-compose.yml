@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: spaceship
+      POSTGRES_PASSWORD: spaceship
+      POSTGRES_DB: spaceship
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spaceship"]
+      interval: 2s
+      retries: 15
+
+  cad:
+    build: ./cad
+    environment:
+      ARTIFACTS_ROOT: /data/artifacts
+    volumes: [artifacts:/data/artifacts]
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 3s
+      retries: 20
+
+  api:
+    build: ./api
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://spaceship:spaceship@postgres:5432/spaceship
+      CAD_URL: http://cad:8000
+      ARTIFACTS_ROOT: /data/artifacts
+      CORS_ORIGIN: http://localhost:5173
+    volumes: [artifacts:/data/artifacts:ro]
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      cad: {condition: service_healthy}
+
+volumes:
+  pgdata:
+  artifacts:

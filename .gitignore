@@ -1,0 +1,24 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# go
+api/bin/
+
+# web
+node_modules/
+web/dist/
+
+# generated artifacts
+runs/
+*.glb
+*.step
+!cad/tests/fixtures/*
+
+.DS_Store
