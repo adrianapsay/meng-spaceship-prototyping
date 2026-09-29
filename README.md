@@ -4,6 +4,8 @@ Type a mission in plain English, such as *"3U CubeSat for Earth imaging with dep
 
 > Prototype for the UC Berkeley MEng × NASA capstone *Text to Spaceship: Building for NASA with Agentic Workflows*. The long-term target is NASA's Habitable Worlds Observatory; CubeSats are the first test case.
 
+**New to the project?** Go straight to [Setup](#setup). It walks you through everything, step by step.
+
 ## The problem and the approach
 
 AI coding agents can generate a single CAD part, but they struggle with **assemblies**: many parts that must fit together without overlapping, stay attached, and meet size and mass limits.
@@ -90,21 +92,113 @@ The catalog has 8 parametric parts: camera payload, reaction wheel, star tracker
 
 Choices deliberately left out until they're needed: gRPC (one internal call doesn't justify it), object storage like S3 (a shared volume works on one machine), job queues and Kubernetes. The Roadmap notes where each would come in.
 
-## Quickstart
+## Setup
 
-Requirements: Docker, Node 20+, and a free [Gemini API key](https://aistudio.google.com).
+No AI or software background needed. Follow the steps in order; the first run takes about 15 minutes, mostly downloads.
 
+### What you're installing, and why
+
+| Tool | What it is | Why we need it |
+|---|---|---|
+| **Git** | Version control: downloads the code and tracks changes | To get the project onto your computer |
+| **Docker Desktop** | Runs programs inside *containers*, pre-packaged mini-computers with everything already installed | Runs the backend (database, CAD engine, API) so you don't have to install Python, OpenCascade or Postgres yourself |
+| **Node.js** (version 22) | Runs JavaScript tools | Runs the web page you interact with |
+| **Gemini API key** | A password that lets the app use Google's AI model | The AI designer needs it. It's free, and each person gets their own. |
+
+### Step 1: Install the tools
+
+**Mac**
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/). Choose "Apple Silicon" or "Intel" to match your Mac ( → About This Mac).
+2. Install [Homebrew](https://brew.sh) if you don't have it, then in Terminal run:
+   ```bash
+   brew install git node
+   ```
+
+**Windows**
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/). When asked, keep **"Use WSL 2"** checked, and restart if prompted.
+2. Open **PowerShell** and run `wsl --install`, then restart. This gives you **Ubuntu**, a Linux terminal where every command below works as written.
+3. Open **Ubuntu** from the Start menu and run:
+   ```bash
+   sudo apt update && sudo apt install -y git make
+   curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs
+   ```
+   Run every command from here on inside the Ubuntu terminal.
+
+**Check it worked.** Each command should print a version number:
 ```bash
-cp .env.example .env    # then paste your key after GEMINI_API_KEY=
-make up                 # starts postgres, cad and api (API on http://localhost:8080)
-make web                # starts the UI on http://localhost:5173
+git --version
+docker --version
+node --version     # should start with v22 (v20.19 or newer also works)
 ```
 
-Open http://localhost:5173, pick an example prompt, and click **Design it**.
+### Step 2: Get a Gemini API key
 
-**Without an LLM:** `make example` builds a hand-written 3U reference design with the CAD engine alone and writes STEP/GLB to `cad/out/`.
+1. Go to [aistudio.google.com](https://aistudio.google.com) and sign in with a Google account.
+2. Click **Get API key → Create API key**, and copy it.
 
-**From the terminal:**
+Treat the key like a password: never paste it into Slack, email or the code.
+
+### Step 3: Download the code and add your key
+
+```bash
+git clone https://github.com/adrianapsay/meng-spaceship-prototyping.git
+cd meng-spaceship-prototyping
+cp .env.example .env
+```
+
+Open the new `.env` file in any text editor. Paste your key right after `GEMINI_API_KEY=`, with no spaces or quotes, and save. Git ignores `.env`, so your key never gets uploaded.
+
+### Step 4: Start the backend
+
+Open **Docker Desktop** and wait until it says it's running. Then:
+
+```bash
+make up
+```
+
+The first time, this downloads and builds everything (about 5–10 minutes). Later starts take seconds. To check it worked, run `docker compose ps`: `postgres`, `cad` and `api` should all show **Up**.
+
+### Step 5: Start the web page
+
+```bash
+make web
+```
+
+Leave this terminal open; the page stops if you close it. Open **http://localhost:5173** in your browser, pick an example prompt, and click **Design it**.
+
+### Everyday use
+
+| To… | Run |
+|---|---|
+| Start the backend | `make up` (Docker Desktop must be open) |
+| Start the web page | `make web` |
+| Stop the backend | `make down` |
+| See what the backend is doing | `make logs` (press Ctrl+C to exit) |
+| Try the CAD engine without AI | `make example` (needs `uv`, see below) |
+
+### If something goes wrong
+
+| Problem | Fix |
+|---|---|
+| `Cannot connect to the Docker daemon` | Docker Desktop isn't running. Open it, wait, and retry. |
+| `port is already allocated` | Another program is using port 5432, 8000 or 8080. Quit it (often a local Postgres), or ask in Slack. |
+| A design fails with **429 Too Many Requests** | Your free AI quota for that model is used up. In `.env`, add `GEMINI_MODEL=gemini-2.5-flash` (each model has its own quota), then run `docker compose up -d api`. |
+| Clicking **Design it** seems to do nothing | Run `make logs` and look for red `ERROR` lines. The usual cause is a missing or mistyped key in `.env`. |
+| `make: command not found` | Use the Ubuntu terminal on Windows, or run `docker compose up -d --build` and `cd web && npm install && npm run dev` instead. |
+
+### Only if you'll edit the code
+
+The steps above are enough to run the app. To change the code, also install the tools for the part you're working on (Mac: `brew install uv go sqlc`):
+
+| Editing… | You need | Check your work with |
+|---|---|---|
+| CAD engine (`cad/`, Python) | `uv` | `cd cad && uv run pytest` |
+| API and agent (`api/`, Go) | `go` (plus `sqlc` if you change SQL) | `cd api && go test ./...` |
+| Web page (`web/`) | nothing extra | `cd web && npx tsc -b` |
+
+After editing the CAD engine or API, run `make up` again to rebuild them. The web page reloads by itself.
+
+### Using the API from a terminal
 
 ```bash
 curl -X POST localhost:8080/v1/designs -d '{"prompt":"3U CubeSat for Earth imaging with deployable solar panels"}'
