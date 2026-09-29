@@ -47,7 +47,7 @@ sequenceDiagram
         A->>C: 4. Build and check the spec
         C-->>A: 5. Report: pass, or exact errors
         A-->>G: Iteration result
-        G-->>B: Saved; live update + 3D model
+        G-->>B: Save, then live update + 3D model
     end
     L-->>A: 6. "Finalize"
     A-->>G: Run finished
@@ -149,7 +149,7 @@ node --version     # should start with v22 (v20.19 or newer also works)
 1. Go to [aistudio.google.com](https://aistudio.google.com) and sign in with a Google account.
 2. Click **Get API key → Create API key**, and copy it.
 
-Treat the key like a password: never paste it into Slack, email or the code.
+Treat the key like a password!!! Do not share this key.
 
 ### Step 3: Download the code and add your key
 
