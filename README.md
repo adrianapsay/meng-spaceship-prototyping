@@ -2,7 +2,7 @@
 
 Type a mission in plain English, such as *"3U CubeSat for Earth imaging with deployable solar panels"*. An AI agent designs a satellite made of multiple parts, builds it as real 3D CAD geometry, checks it against engineering rules, and fixes its own mistakes until the design passes. You watch each attempt live in a 3D viewer, then download the result as CAD files.
 
-> Prototype for the UC Berkeley MEng × NASA capstone *Text to Spaceship: Building for NASA with Agentic Workflows*. The long-term target is NASA's Habitable Worlds Observatory; CubeSats are the first test case.
+> Prototype for the UC Berkeley MEng × NASA capstone *Text to Spaceship: Building for NASA with Agentic Workflows*. The long-term target is NASA's Habitable Worlds Observatory. Decided to have CubeSats as the first test case for prototyping.
 
 **New to the project?** Go straight to [Setup](#setup). It walks you through everything, step by step.
 
