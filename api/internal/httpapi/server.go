@@ -18,10 +18,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/agent"
 	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/designs"
 	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/events"
-	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/llm"
 	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/store"
 )
 
@@ -41,7 +39,6 @@ type Server struct {
 	Queries       *store.Queries
 	Designs       *designs.Service
 	Hub           *events.Hub
-	Providers     *llm.Registry
 	ArtifactsRoot string
 	CORSOrigin    string
 	Ping          func(context.Context) error
@@ -56,7 +53,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /v1/designs", s.listDesigns)
 	mux.HandleFunc("GET /v1/designs/{id}", s.getDesign)
 	mux.HandleFunc("GET /v1/designs/{id}/events", s.streamEvents)
-	mux.Handle("GET "+agent.ArtifactsURLPrefix, http.StripPrefix(agent.ArtifactsURLPrefix,
+	mux.Handle("GET "+designs.ArtifactsURLPrefix, http.StripPrefix(designs.ArtifactsURLPrefix,
 		http.FileServerFS(os.DirFS(s.ArtifactsRoot))))
 	return s.recoverer(s.logRequests(s.cors(mux)))
 }
@@ -69,8 +66,14 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func (s *Server) listProviders(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"default": s.Providers.Default, "providers": s.Providers.List()})
+func (s *Server) listProviders(w http.ResponseWriter, r *http.Request) {
+	p, err := s.Designs.Providers(r.Context())
+	if err != nil {
+		s.Log.Error("list providers", "err", err)
+		writeError(w, http.StatusServiceUnavailable, "agent_unavailable", "agent service unavailable")
+		return
+	}
+	writeJSON(w, http.StatusOK, p)
 }
 
 type createDesignRequest struct {
@@ -107,8 +110,13 @@ func (s *Server) createDesign(w http.ResponseWriter, r *http.Request) {
 	d, err := s.Designs.Create(r.Context(), designs.CreateParams{
 		Prompt: req.Prompt, Provider: req.Provider, Model: req.Model, MaxIterations: req.MaxIterations,
 	})
-	if errors.Is(err, llm.ErrUnknownProvider) {
+	if errors.Is(err, designs.ErrUnknownProvider) {
 		writeError(w, http.StatusBadRequest, "invalid_provider", err.Error())
+		return
+	}
+	if errors.Is(err, designs.ErrAgentUnavailable) {
+		s.Log.Error("create design", "err", err)
+		writeError(w, http.StatusServiceUnavailable, "agent_unavailable", "agent service unavailable")
 		return
 	}
 	if err != nil {
@@ -163,8 +171,8 @@ func (s *Server) getDesign(w http.ResponseWriter, r *http.Request) {
 			Artifacts *struct{ GLB, STEP string } `json:"artifacts"`
 		}
 		if json.Unmarshal(it.Report, &rep) == nil && rep.Artifacts != nil {
-			iterations[i].GLBURL = agent.ArtifactsURLPrefix + rep.Artifacts.GLB
-			iterations[i].STEPURL = agent.ArtifactsURLPrefix + rep.Artifacts.STEP
+			iterations[i].GLBURL = designs.ArtifactsURLPrefix + rep.Artifacts.GLB
+			iterations[i].STEPURL = designs.ArtifactsURLPrefix + rep.Artifacts.STEP
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"design": d, "iterations": iterations})

@@ -15,6 +15,16 @@ jobs:
       - run: uv run ruff check . && uv run ruff format --check .
       - run: uv run pytest -q
 
+  agent:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: agent}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - run: uv run ruff check . && uv run ruff format --check .
+      - run: uv run pytest -q
+
   api:
     runs-on: ubuntu-latest
     defaults: {run: {working-directory: api}}

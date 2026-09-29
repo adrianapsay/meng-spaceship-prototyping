@@ -6,7 +6,7 @@
 Coding agents can produce single parts with CAD scripts (CadQuery, build123d, OpenSCAD), but multi-part assemblies fail in predictable ways: parts overlap, float in space, or violate envelope and mass constraints. Nothing in a free-form script tells the model *which* constraint it broke or by how much.
 
 ## Decision
-The LLM emits an **AssemblySpec**: a JSON document that picks components from a parametric library and places each one (position and rotation in a shared bus frame). The Python CAD service owns the schema as a Pydantic model. That model is the single source of truth: the Go orchestrator fetches it (`GET /schema`) and hands it to the model as the tool's input schema.
+The LLM emits an **AssemblySpec**: a JSON document that picks components from a parametric library and places each one (position and rotation in a shared bus frame). The Python CAD service owns the schema as a Pydantic model. That model is the single source of truth: the agent service fetches it (`GET /schema`) and hands it to the model as the tool's input schema.
 
 Deterministic code then builds the geometry (build123d/OpenCascade) and runs checks. Each failure comes back with numbers the model can act on: overlap volume, gap distance, envelope exceedance per axis, mass over the limit, and center-of-mass offset.
 

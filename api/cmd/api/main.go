@@ -1,5 +1,5 @@
-// Command api is the Text-to-Spaceship orchestrator: public API, agent loop
-// and persistence.
+// Command api is the Text-to-Spaceship public API: it starts design runs on the
+// agent service, persists what they report, and streams progress to browsers.
 package main
 
 import (
@@ -14,11 +14,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/cad"
+	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/agentclient"
 	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/designs"
 	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/events"
 	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/httpapi"
-	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/llm"
 	"github.com/adrianapsay/meng-spaceship-prototyping/api/internal/store"
 )
 
@@ -49,12 +48,8 @@ func run(log *slog.Logger) error {
 		log.Warn("marked interrupted designs as failed", "count", n)
 	}
 
-	providers := llm.RegistryFromEnv()
-	if providers.Default == "" {
-		log.Warn("no LLM provider configured; set GEMINI_API_KEY (or another provider key) to run designs")
-	}
 	hub := events.NewHub()
-	svc := designs.NewService(queries, hub, cad.New(env("CAD_URL", "http://localhost:8000")), providers, log)
+	svc := designs.NewService(queries, hub, agentclient.New(env("AGENT_URL", "http://localhost:8001")), log)
 
 	srv := &http.Server{
 		Addr: ":" + env("PORT", "8080"),
@@ -62,7 +57,6 @@ func run(log *slog.Logger) error {
 			Queries:       queries,
 			Designs:       svc,
 			Hub:           hub,
-			Providers:     providers,
 			ArtifactsRoot: env("ARTIFACTS_ROOT", "../cad/artifacts"),
 			CORSOrigin:    env("CORS_ORIGIN", "http://localhost:5173"),
 			Ping:          pool.Ping,
@@ -73,7 +67,7 @@ func run(log *slog.Logger) error {
 
 	errc := make(chan error, 1)
 	go func() {
-		log.Info("listening", "addr", srv.Addr, "default_provider", providers.Default)
+		log.Info("listening", "addr", srv.Addr)
 		errc <- srv.ListenAndServe()
 	}()
 	select {
